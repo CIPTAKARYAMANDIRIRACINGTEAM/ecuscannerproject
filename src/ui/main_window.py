@@ -2,11 +2,13 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButt
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect
 import threading
-from obd.obd_connector import OBDConnector
+from src.obd_connector import OBDConnector
+from config.config import load_config
 
 class ECUScannerApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.config = load_config()
         self.initUI()
         self.connector = None
 
@@ -40,7 +42,7 @@ class ECUScannerApp(QMainWindow):
                 background-color: #ffffff;
             }
         """)
-        
+
         sensor_layout = QVBoxLayout()
         self.sensor_labels = {
             'RPM': QLabel('RPM: -'),
@@ -82,7 +84,6 @@ class ECUScannerApp(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-        # Animasi untuk frame sensor
         self.anim = QPropertyAnimation(self.sensor_frame, b"geometry")
         self.anim.setDuration(1000)
         self.anim.setStartValue(QRect(150, 150, 500, 0))
@@ -90,13 +91,29 @@ class ECUScannerApp(QMainWindow):
         self.anim.setEasingCurve(Qt.EaseInOutQuad)
 
     def updateConnection(self, text):
+        if not self.config:
+            QMessageBox.critical(self, "Error", "Konfigurasi tidak tersedia.")
+            return
+
         try:
+            conn_config = self.config['obd_connection']
             if text == 'Serial':
-                self.connector = OBDConnector(connection_type='serial', port='COM3')  # Ganti dengan port yang sesuai
+                self.connector = OBDConnector(
+                    connection_type='serial',
+                    port=conn_config.get('port', 'COM3'),
+                    baudrate=conn_config.get('baud_rate', 9600)
+                )
             elif text == 'Bluetooth':
-                self.connector = OBDConnector(connection_type='bluetooth', port='XX:XX:XX:XX:XX:XX')  # Ganti dengan alamat Bluetooth yang sesuai
+                self.connector = OBDConnector(
+                    connection_type='bluetooth',
+                    port=conn_config.get('port', 'XX:XX:XX:XX:XX:XX')
+                )
             elif text == 'WiFi':
-                self.connector = OBDConnector(connection_type='wifi', ip_address='192.168.0.10', port_number=35000)  # Ganti dengan alamat IP dan port yang sesuai
+                self.connector = OBDConnector(
+                    connection_type='wifi',
+                    ip_address=conn_config.get('ip_address', '192.168.0.10'),
+                    port_number=conn_config.get('port_number', 35000)
+                )
 
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Information)

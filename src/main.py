@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget, QComboBox, QLineEdit, QMessageBox
-from obd.obd_connector import OBDConnector  # Pastikan jalur impor benar
+from src.obd_connector import OBDConnector  # Pastikan jalur impor benar
 import sys
 
 class ECUScannerApp(QMainWindow):
@@ -48,22 +48,26 @@ class ECUScannerApp(QMainWindow):
 
     def connect_obd(self):
         connection_type = self.connection_type_combo.currentText().lower()
-        port = self.port_input.text()
-        ip_address = self.ip_input.text()
-        port_number = self.port_number_input.text()
+        port = self.port_input.text().strip()
+        ip_address = self.ip_input.text().strip()
+        port_number = self.port_number_input.text().strip()
 
         try:
             if connection_type == 'serial':
+                if not port:
+                    raise ValueError("Port harus diisi untuk koneksi Serial.")
                 self.obd_connector = OBDConnector(connection_type='serial', port=port)
             elif connection_type == 'bluetooth':
+                if not port:
+                    raise ValueError("Alamat Bluetooth harus diisi untuk koneksi Bluetooth.")
                 self.obd_connector = OBDConnector(connection_type='bluetooth', port=port)
             elif connection_type == 'wifi':
-                if ip_address and port_number:
-                    self.obd_connector = OBDConnector(connection_type='wifi', ip_address=ip_address, port_number=int(port_number))
-                else:
+                if not ip_address or not port_number:
                     raise ValueError("IP Address dan Port Number harus diisi untuk koneksi WiFi.")
+                self.obd_connector = OBDConnector(connection_type='wifi', ip_address=ip_address, port_number=int(port_number))
             else:
                 raise ValueError("Jenis koneksi tidak dikenali.")
+            
             QMessageBox.information(self, "Koneksi Berhasil", "OBD Connector terhubung.")
         except Exception as e:
             QMessageBox.critical(self, "Koneksi Gagal", str(e))
