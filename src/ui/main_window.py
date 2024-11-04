@@ -40,6 +40,7 @@ class ECUScannerApp(QMainWindow):
                 background-color: #ffffff;
             }
         """)
+        
         sensor_layout = QVBoxLayout()
         self.sensor_labels = {
             'RPM': QLabel('RPM: -'),
@@ -81,6 +82,7 @@ class ECUScannerApp(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
+        # Animasi untuk frame sensor
         self.anim = QPropertyAnimation(self.sensor_frame, b"geometry")
         self.anim.setDuration(1000)
         self.anim.setStartValue(QRect(150, 150, 500, 0))
@@ -90,11 +92,11 @@ class ECUScannerApp(QMainWindow):
     def updateConnection(self, text):
         try:
             if text == 'Serial':
-                self.connector = OBDConnector(connection_type='serial')
+                self.connector = OBDConnector(connection_type='serial', port='COM3')  # Ganti dengan port yang sesuai
             elif text == 'Bluetooth':
-                self.connector = OBDConnector(connection_type='bluetooth', port='XX:XX:XX:XX:XX:XX')
+                self.connector = OBDConnector(connection_type='bluetooth', port='XX:XX:XX:XX:XX:XX')  # Ganti dengan alamat Bluetooth yang sesuai
             elif text == 'WiFi':
-                self.connector = OBDConnector(connection_type='wifi', ip_address='192.168.0.10', port_number=35000)
+                self.connector = OBDConnector(connection_type='wifi', ip_address='192.168.0.10', port_number=35000)  # Ganti dengan alamat IP dan port yang sesuai
 
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Information)
@@ -121,10 +123,16 @@ class ECUScannerApp(QMainWindow):
                 label.setText('Pilih tipe koneksi terlebih dahulu.')
 
     def updateSensorData(self):
-        data = self.connector.get_sensor_data()
-        for sensor, value in data.items():
-            self.sensor_labels[sensor].setText(f'{sensor}: {value}')
-        self.scan_button.setText('Scan Data')
+        try:
+            data = self.connector.get_sensor_data()
+            for sensor, value in data.items():
+                self.sensor_labels[sensor].setText(f'{sensor}: {value}')
+        except Exception as e:
+            for label in self.sensor_labels.values():
+                label.setText('Gagal mendapatkan data.')
+            print(f"Error: {str(e)}")
+        finally:
+            self.scan_button.setText('Scan Data')
 
     def closeEvent(self, event):
         if self.connector:

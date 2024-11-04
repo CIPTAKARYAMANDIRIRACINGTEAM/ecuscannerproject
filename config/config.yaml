@@ -1,0 +1,6 @@
+# Konfigurasi OBD-II
+obd_connection:
+  type: "serial"  # Jenis koneksi: serial, bluetooth, atau wifi
+  port: "COM3"    # Port untuk koneksi serial atau alamat untuk bluetooth
+  ip_address: "192.168.0.10"  # IP address untuk koneksi WiFi
+  port_number: 35000  # Port number untuk koneksi WiFi

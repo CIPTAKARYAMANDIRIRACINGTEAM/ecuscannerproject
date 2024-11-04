@@ -13,6 +13,7 @@ class OBDConnector:
         self.protocols = ['ISO 9141-2', 'ISO 14230-4', 'ISO 15765-4', 'J1850 PWM', 'J1850 VPW']
         self.current_protocol = None
 
+        # Inisialisasi koneksi sesuai dengan jenis yang dipilih
         if connection_type == 'serial':
             self.ser = serial.Serial(port=port, baudrate=baudrate, timeout=1)
         elif connection_type == 'bluetooth':
@@ -24,6 +25,7 @@ class OBDConnector:
                 self.sock.connect((ip_address, port_number))
             else:
                 raise ValueError("IP address dan port number harus disediakan untuk koneksi WiFi.")
+        
         self.detect_protocol()
 
     def detect_protocol(self):
@@ -32,29 +34,17 @@ class OBDConnector:
             if self.test_protocol(protocol):
                 self.current_protocol = protocol
                 print(f"Protokol terdeteksi: {protocol}")
-                break
-        else:
-            print("Tidak ada protokol yang cocok. Pastikan ECU mendukung OBD-II.")
-            raise ConnectionError("Protokol tidak terdeteksi.")
+                return
+        print("Tidak ada protokol yang cocok. Pastikan ECU mendukung OBD-II.")
+        raise ConnectionError("Protokol tidak terdeteksi.")
 
     def test_protocol(self, protocol):
         try:
-            if protocol == 'ISO 9141-2':
-                self.ser.write(b'ATZ\r')
-                time.sleep(1)
-                response = self.ser.read(128).decode().strip()
-                return bool(response)
-            elif protocol == 'ISO 14230-4':
-                self.ser.write(b'ATZ\r')
-                time.sleep(1)
-                response = self.ser.read(128).decode().strip()
-                return bool(response)
-            elif protocol == 'ISO 15765-4':
-                self.ser.write(b'ATSP C\r')
-                time.sleep(1)
-                response = self.ser.read(128).decode().strip()
-                return bool(response)
-            return False
+            # Mengirim perintah untuk menguji protokol
+            self.send_command('ATZ')  # Reset OBD-II
+            time.sleep(1)
+            response = self.send_command('ATDP')  # Tanyakan protokol
+            return bool(response)
         except Exception as e:
             print(f"Protokol {protocol} gagal: {e}")
             return False
@@ -64,11 +54,14 @@ class OBDConnector:
             self.ser.write((command + '\r').encode())
             response = self.ser.read(128).decode().strip()
         elif self.connection_type == 'bluetooth':
-            self.bt_sock.send(command + '\r')
+            self.bt_sock.send((command + '\r').encode())
             response = self.bt_sock.recv(128).decode().strip()
         elif self.connection_type == 'wifi':
             self.sock.sendall((command + '\r').encode())
             response = self.sock.recv(128).decode().strip()
+        else:
+            return "Koneksi tidak valid"
+
         return response if response else 'Data tidak tersedia'
 
     def close(self):
@@ -84,8 +77,28 @@ class OBDConnector:
             'RPM': '010C',
             'Suhu Mesin': '0105',
             'Kecepatan': '010D',
+            'TPS': '010F',
+            'MAP': '010B',
+            'Load': '0104',
+            'Coolant Temp': '0105',
+            'Fuel Status': '012F',
+            'Short Term Trim': '0130',
+            'Long Term Trim': '0131',
+            'Intake Pressure': '010B',
+            'Ignition Timing': '010E',
+            'Air Temp': '010F',
+            'Air Flow': '0110',
+            'O2 Voltage': '0130',
+            'Fuel Pressure': '0131',
         }
         data = {}
         for sensor, command in sensors.items():
-            data[sensor] = self.send_command(command)
+            response = self.send_command(command)
+            # Parsing response (sesuaikan ini berdasarkan format respons yang sebenarnya)
+            if response.startswith('41'):
+                # Mengambil nilai dari respons OBD-II
+                value = response[4:].strip()
+                data[sensor] = value
+            else:
+                data[sensor] = 'Data tidak tersedia'
         return data
