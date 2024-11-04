@@ -83,8 +83,8 @@ The **ECU Smart X Scanner** is a powerful diagnostic tool designed for automotiv
 
 For technical support, please contact our customer service team:
 
-- **Email**: support@ecusmartx.com
-- **Phone**: 1-800-555-ECUS (3287)
+- **Email**: ckmrt@gmail.com
+- **Phone**: 081374347075
 - **Live Chat**: Available on our website during business hours
 
 ## License
